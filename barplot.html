@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Exoplanet Discoveries by Detection Method Over Time</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      background: #000022;
+      color: white;
+      font-family: "Arial", sans-serif;
+    }
+
+    .axis path,
+    .axis line {
+      stroke: #ccc;
+    }
+
+    .axis text {
+      fill: #ccc;
+    }
+
+    .chart {
+      width: 960px;
+      height: 500px;
+    }
+
+    .bar {
+      fill-opacity: 0.7;
+    }
+
+    .axis-label {
+      fill: #ffffff;
+    }
+
+    .tooltip {
+      position: absolute;
+      text-align: center;
+      width: auto;
+      padding: 6px;
+      background: #333;
+      color: #ddd;
+      border: 0px;
+      border-radius: 8px;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .chart-title,
+    .legend-text {
+      fill: #ccc;
+    }
+
+    .bar-label {
+      fill: #eee;
+    }
+
+    .star {
+      fill: #fff;
+      fill-opacity: 0.8;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="chart" class="chart"></div>
+  <div id="tooltip" class="tooltip"></div>
+  <script>
+    const margin = {top: 20, right: 20, bottom: 50, left: 60},
+      width = 960 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
+
+    const svg = d3.select("#chart")
+      .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    const starCount = 200;
+    const stars = svg.selectAll(".star")
+      .data(d3.range(starCount))
+      .enter().append("circle")
+      .attr("class", "star")
+      .attr("cx", () => Math.random() * width)
+      .attr("cy", () => Math.random() * height)
+      .attr("r", () => Math.random() * 2);
+
+    function twinkle() {
+      stars.transition()
+        .duration(() => 500 + Math.random() * 1000)
+        .style("opacity", () => Math.random())
+        .on("end", twinkle);
+    }
+
+    twinkle();
+
+    const x0 = d3.scaleBand().rangeRound([0, width]).paddingInner(0.1);
+    const x1 = d3.scaleBand().padding(0.01);
+    const y = d3.scaleLinear().rangeRound([height, 0]);
+    const z = d3.scaleOrdinal(d3.schemeTableau10);
+
+    const tooltip = d3.select("#tooltip");
+
+    d3.csv("cleaned_5250.csv").then(function (data) {
+      const detectionMethods = Array.from(new Set(data.map(d => d.detection_method)));
+      const years = Array.from(new Set(data.map(d => d.discovery_year))).sort(d3.ascending);
+      const formattedData = years.map(year => {
+        const entries = data.filter(d => d.discovery_year === year);
+        const byMethod = Object.fromEntries(detectionMethods.map(method => {
+          const count = entries.filter(e => e.detection_method === method).length;
+          return [method, count];
+        }));
+        return {year, ...byMethod};
+      });
+
+      x0.domain(years);
+      x1.domain(detectionMethods).rangeRound([0, x0.bandwidth()]);
+      y.domain([0, d3.max(formattedData, d => d3.max(detectionMethods, key => d[key]))]).nice();
+
+      svg.append("g")
+        .selectAll("g")
+        .data(formattedData)
+        .enter().append("g")
+        .attr("transform", d => "translate(" + x0(d.year) + ",0)")
+        .selectAll("rect")
+        .data(d => detectionMethods.map(key => ({key, value: d[key]})))
+        .enter().append("rect")
+        .attr("x", d => x1(d.key))
+        .attr("y", d => y(d.value))
+        .attr("width", x1.bandwidth())
+        .attr("height", d => height - y(d.value))
+        .attr("fill", d => z(d.key))
+        // .on("mouseover", (event, d) => {
+        //   tooltip.transition()
+        //     .duration(200)
+        //     .style("opacity", .9);
+        //   tooltip.html("Detection Method: " + d.key + "<br/>Count: " + d.value)
+        //     .style("left", (event.pageX) + "px")
+        //     .style("top", (event.pageY - 28) + "px");
+        // })
+        // .on("mouseout", () => {
+        //   tooltip.transition()
+        //     .duration(500)
+        //     .style("opacity", 0);
+        // });
+
+      svg.append("g")
+        .attr("class", "axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x0));
+
+      svg.append("g")
+        .attr("class", "axis")
+        .call(d3.axisLeft(y).ticks(null, "s"))
+        .append("text")
+        .attr("x", 2)
+        .attr("y", y(y.ticks().pop()) + 0.5)
+        .attr("dy", "0.32em")
+        .attr("fill", "#000")
+        .attr("font-weight", "bold")
+        .attr("text-anchor", "start");
+      
+      svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", height + margin.bottom / 2 + 20)
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .text("Discovery Year")
+        .attr("fill", "white");
+
+      svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - margin.left)
+        .attr("x", 0 - (height / 2))
+        .attr("dy", "1em")
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .text("Number of Discoveries")
+        .attr("fill", "white");
+      
+      const legend = svg.append("g")
+        .attr("font-family", "sans-serif")
+        .attr("font-size", 10)
+        .attr("text-anchor", "end")
+        .selectAll("g")
+        .data(detectionMethods.slice().reverse())
+        .enter().append("g")
+        .attr("transform", (d, i) => "translate(0," + i * 20 + ")");
+
+      legend.append("rect")
+        .attr("x", width - 19)
+        .attr("width", 19)
+        .attr("height", 19)
+        .attr("fill", z);
+
+      legend.append("text")
+        .attr("class", "legend-text")
+        .attr("x", width - 24)
+        .attr("y", 9.5)
+        .attr("dy", "0.32em")
+        .text(d => d);
+
+      svg.append("text")
+        .attr("x", (width / 2))
+        .attr("y", 0 - (margin.top / 2))
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .style("text-decoration", "underline")
+        .text("Exoplanet Discoveries by Detection Method Over Time");
+
+    }).catch(function (error) {
+      console.error("Error loading the CSV file:", error);
+    });
+  </script>
+</body>
+
+</html>

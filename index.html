@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>A Starry Night of Exoplanets</title>
+        <script src="https://d3js.org/d3.v6.min.js"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+            crossorigin="anonymous"
+        />
+      <style type="text/css">
+          html, body {
+              margin: 0;
+              padding: 0;
+              width: 100%;
+              background-color: #251438;
+              display: block;
+          }
+
+          .container-fluid {
+              padding: 0;
+          }
+
+          svg {
+              display: block;
+              width: 100%;
+              height: auto;
+          }
+
+          .tooltip {
+              position: absolute;
+              background: rgba(0, 0, 0, 0.8);
+              color: #fff;
+              padding: 10px;
+              border-radius: 5px;
+              pointer-events: none;
+              opacity: 0;
+          }
+
+        .starry-night-container {
+            position: relative;
+            min-height: 100vh;
+        }
+
+        .year-slider, .current-year, .events-text, .project-description {
+            position: absolute;
+        }
+
+        .year-slider {
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .current-year {
+            top: 10px;
+            right: 10px;
+        }
+
+        .events-text {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .project-description {
+            bottom: 10px;
+            left: 10px;
+        }
+
+        .description-container {
+          background: rgb(0,0,0);
+          background: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 60%, rgba(37,20,56,1) 100%);
+            color: white;
+            min-height: 100vh; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .description-content {
+            max-width: 800px;
+            padding: 15px;
+        }
+
+        .next-container {
+          background: rgb(37,20,56);
+          background: linear-gradient(180deg, rgba(37,20,56,1) 0%, rgba(0,0,34,1) 20%, rgba(0,0,34,1) 100%);
+            color: white;
+            min-height: 100vh; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+      </style>
+      </head>
+      <body>
+        <div id="pagepiling">
+        <div class="section container-fluid description-container">
+          <div class="text-center text-white p-4" style="max-width: 800px;">
+              <h2>A Journey Through the Cosmos: Unveiling Exoplanets</h2>
+              <p class="lead mt-4">
+                  Every star in the night sky is a sun, and revolving around many of these suns are worlds unseen to the naked eye. These worlds, known as exoplanets, are diverse and numerous, each telling a unique story of cosmic wonder.
+              </p>
+              <p>
+                  Our visualization, "A Starry Night of Exoplanets," invites you on a stellar journey through time. As you adjust the year on the slider, you unveil these celestial wonders, each pinpoint of light representing a world discovered up to that year. From gas giants larger than Jupiter to rocky worlds that could harbor life, each exoplanet discovery is a testament to human curiosity and our eternal quest to understand the universe.
+              </p>
+              <p>
+                  The attributes visualized below are Discovery Year, Distance from Earth in Light Years shown as radius of the circles and their rotation speed, and the Planet Type is shown via different colors. The further the distance from Earth, the smaller is the radii and it's speed. If you look up, this is what you will see. 
+                  The marks are points, the channels are the colors of circles, area of the circle, the interactions are the rotation speed of the circles. 
+              </p>
+              <p class="fst-italic">
+                  Embark on this celestial journey, and let the stars guide you through the history of exoplanet discovery.
+              </p>
+          </div>
+        </div>
+
+        <!-- Starry Night Container -->
+        <div class="section container-fluid starry-night-container text-white">
+            <!-- SVG Container -->
+            <div id="scene"></div>
+
+            <!-- Year Slider -->
+            <div class="year-slider">
+                <label for="customRange2" class="form-label">Year</label>
+                <input type="range" class="form-range" min="0" max="0" id="customRange2" />
+            </div>
+
+            <!-- Current Year -->
+            <div class="current-year fs-1 mt-4" id="year">
+                Loading
+            </div>
+
+            <!-- Significant Events Text -->
+            <div class="events-text text-center">
+                <span id="yearText" style="font-size: 4rem; display: none;"></span>
+                <br />
+                <span id="yearSubText" style="display: none;"></span>
+            </div>
+
+            <!-- Project Description -->
+            <div class="project-description">
+                <span class="fs-1">A starry night</span>
+                <br />
+                <span class="fs-6">
+                    See how the scientific community <br />looked at the sky - <i>through the years</i>.
+                </span>
+            </div>
+
+            <!-- Tooltip -->
+            <div class="tooltip"></div>
+        </div>
+        <!-- Description Container -->
+        <div class="section container-fluid next-container">
+          <div class="d-flex flex-column align-items-center justify-content-center pt-5" style="height: 100%;">
+              <div class="text-center" style="max-width: 800px; padding: 20px;">
+                  <h2>Charting the Celestial Discoveries</h2>
+                  <p class="lead mt-4">
+                      As we traverse the timeline of cosmic exploration, each year unveils a new chapter in our understanding. The line chart displaying the trend of exoplanet discoveries over time reveals several key insights. The chart indicates an overall upward trend in the number of exoplanets discovered each year, reflecting advancements in astronomical technology and methods that enable the detection of more distant and fainter celestial bodies.
+                  </p>
+                  <p class="lead mt-4">
+                    In the line chart of exoplanet discoveries, the marks consist of points representing each year's discovery count and a continuous line that connects these points to depict the trend over time. The position channel is the primary visual cue, with the horizontal position encoding the discovery year and the vertical position encoding the number of discoveries. Color and size may serve as additional channels to enhance readability or highlight specific years, although they are secondary to the positional encoding.
+                </p>
+                    </div>
+            <!-- Placeholder for the bar plot iframe -->
+            <div class="text-center">
+              <iframe class="" src="/lineplot.html" style="height:550px; width:1000px;" allowfullscreen=""></iframe>
+            </div>
+
+            <div class="text-center" style="max-width: 800px; padding: 20px;">
+                <h2>Charting the Celestial Discoveries</h2>
+                <p class="lead mt-4">
+                    The scatter plot showcasing Stellar Magnitude vs. Discovery Year for exoplanets serves as a visual exploration of the relationship between the two variables. Each point's horizontal position corresponds to the year of discovery, while its vertical position reflects the stellar magnitude, revealing any potential trends or concentrations in the data.
+                </p>
+                <p class="lead mt-4">
+                    In the scatter plot, the marks used are points, each representing an individual exoplanet with its associated discovery year and stellar magnitude. The horizontal (x) position channel encodes the year of discovery, and the vertical (y) position channel encodes the stellar magnitude, which is purposely inverted to align with astronomical conventions. Additionally, color is also a channel used.
+                </p>
+                  </div>
+          <!-- Placeholder for the bar plot iframe -->
+          <div class="text-center">
+            <iframe class="" src="/scatterplot.html" style="height:550px; width:1000px;" allowfullscreen=""></iframe>
+          </div>
+
+          <!-- <div class="text-center" style="max-width: 800px; padding: 20px;">
+            <h2>Charting the Celestial Discoveries</h2>
+            <p class="lead mt-4">
+                As we traverse the timeline of cosmic exploration, each year unveils a new chapter in our understanding. Behold the stellar journey of discovery, where each bar in the graph below represents a beacon of human curiosity - a newly discovered exoplanet.
+            </p>
+              </div>
+      <div class="text-center">
+        <iframe class="" src="/barplot.html" style="height:550px; width:1000px;" allowfullscreen=""></iframe>
+      </div> -->
+
+
+                  </div>
+                </div>
+              </div>
+          </div>
+        </div>
+        </div>
+        <!-- Scripts -->
+        <script
+            src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"
+        ></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js"></script>
+
+        <!-- Helper functions -->
+        <script type="text/javascript" src="helper.js"></script>
+        <!-- Create the backgrounds -->
+        <script type="text/javascript" src="background.js"></script>
+        <!-- D3.JS code -->
+        <script type="text/javascript" src="main.js"></script>
+        <script type="text/javascript">
+            $(document).ready(function () {
+                // Create SVG container
+                var svg = d3
+                    .select("#scene")
+                    .append("svg")
+                    .attr("width", "100%")
+                    .attr("height", "100%")
+                    .attr("viewBox", "0 0 1900 1000");
+
+                // Set the background color
+                svg.append("rect")
+                    .attr("width", "100%")
+                    .attr("height", "100%")
+                    .attr("fill", "#251438"); // Background color
+
+                svgDefs(svg);
+                createMilyWayGalaxy(svg);
+                loadD3Code(svg);
+
+                // Attach change event to slider
+                $("#customRange2")
+                    .on("change", {'ele': svg}, (event) => changeYear(event, event.data.ele));
+            });
+        </script>
+    </body>
+</html>
